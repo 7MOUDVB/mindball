@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mind Ball</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#F5F5F7;color:#1D1D1F;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif;padding:12px;padding-bottom:32px}
+.wrap{max-width:720px;margin:0 auto}
+header{padding:10px 4px 14px;text-align:center}
+h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.5px}
+h1 i{color:#E4002B;font-style:normal}
+.glass{background:rgba(255,255,255,.72);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid rgba(0,0,0,.06);border-radius:22px;box-shadow:0 8px 30px rgba(0,0,0,.06);padding:14px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input{flex:1;min-width:110px;background:#fff;border:1px solid #D2D2D7;border-radius:12px;padding:11px 12px;font-size:15px;outline:none;color:#1D1D1F}
+input:focus{border-color:#1D1D1F}
+button{border:0;border-radius:999px;padding:11px 16px;font-weight:700;cursor:pointer;font-size:14px}
+.btn-black{background:#1D1D1F;color:#fff}
+.btn-red{background:#E4002B;color:#fff}
+.btn-white{background:#fff;color:#1D1D1F;border:1px solid #D2D2D7}
+.modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:600px){.modes{grid-template-columns:1fr}.field{height:168px!important}h1{font-size:28px}}
+.mode{background:#fff;border:1px solid #E5E5EA;border-radius:16px;padding:12px;text-align:center;cursor:pointer}
+.mode b{font-size:15px;display:block}
+.mode.active{background:#1D1D1F;color:#fff;border-color:#1D1D1F}
+.mode.active span{color:#fff}
+.mode span{font-size:12px;color:#6E6E73}
+.pill{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #E5E5EA;border-radius:999px;padding:7px 10px;font-size:13px}
+.pill input{width:16px;height:16px;min-width:0;flex:none;accent-color:#E4002B}
+.toggles{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.score{display:flex;justify-content:space-between;align-items:center;text-align:center}
+.score b{font-size:30px;font-weight:800}
+.score small{color:#6E6E73;font-size:12px}
+.time{background:#1D1D1F;color:#fff;border-radius:14px;padding:6px 14px;min-width:84px}
+.time b{color:#fff}
+.time small{color:#A1A1A6}
+.field{position:relative;height:210px;border-radius:18px;overflow:hidden;background:#fff;border:1px solid #1D1D1F;touch-action:none;margin-top:12px}
+.field:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:#1D1D1F}
+.fieldCircle{position:absolute;left:50%;top:50%;width:100px;height:100px;border:1px solid #1D1D1F;border-radius:50%;transform:translate(-50%,-50%)}
+.goal{position:absolute;top:50%;width:8px;height:80px;background:#1D1D1F;transform:translateY(-50%)}
+.goal.l{left:0}.goal.r{right:0}
+#ball{position:absolute;top:50%;left:50%;width:24px;height:24px;background:#E4002B;border-radius:50%;box-shadow:0 4px 14px rgba(228,0,43,.35);transform:translate(-50%,-50%);z-index:5}
+#target{position:absolute;width:54px;height:54px;border:2px dashed #E4002B;border-radius:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#E4002B;background:rgba(228,0,43,.06);z-index:4;text-align:center;line-height:1.2}
+#pointerDot{position:absolute;width:10px;height:10px;background:#1D1D1F;border-radius:50%;transform:translate(-50%,-50%);z-index:6;pointer-events:none}
+.bars{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+@media(max-width:600px){.bars{grid-template-columns:1fr}}
+.barBox{background:#fff;border:1px solid #E5E5EA;border-radius:14px;padding:10px}
+.bar{height:8px;background:#E5E5EA;border-radius:999px;overflow:hidden;margin-top:8px}
+.fill{height:100%;width:50%;background:#1D1D1F;transition:width .2s}
+.fill.red{background:#E4002B}
+.wave{height:26px;background:#F5F5F7;border-radius:8px;margin-top:8px;overflow:hidden}
+.wave canvas{width:100%;height:100%}
+.breathWrap{display:flex;gap:12px;align-items:center}
+#breath{width:88px;height:88px;border-radius:50%;background:#fff;border:1.5px solid #1D1D1F;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex:none;transition:transform 1s}
+.micBox{flex:1}
+.micBar{height:6px;background:#E5E5EA;border-radius:999px;overflow:hidden;margin-top:6px}
+#micFill{height:100%;width:0%;background:#E4002B}
+.holdBtn{width:100%;background:#1D1D1F;color:#fff;padding:14px;font-size:15px;margin-top:10px}
+.holdBtn:active{background:#000}
+#msg{font-weight:700;font-size:15px;min-height:20px;text-align:center}
+#status{font-size:12px;color:#6E6E73;text-align:center;min-height:16px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:99;padding:16px}
+.modal.show{display:flex}
+.modalCard{background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-radius:24px;padding:20px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.2)}
+#camPreview{width:100%;max-height:130px;border-radius:14px;background:#000;display:none;object-fit:cover;margin-top:10px}
+.small{font-size:12px;color:#6E6E73}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Mind <i>Ball</i></h1></header>
+
+<div class="glass">
+<div class="row">
+<input id="nick" placeholder="اسمك" value="لاعب">
+<button class="btn-black" onclick="saveNick()">حفظ</button>
+</div>
+<div class="toggles">
+<label class="pill"><input type="checkbox" id="micOn" checked> مايك</label>
+<label class="pill"><input type="checkbox" id="gyroOn" checked> جيروسكوب</label>
+<label class="pill"><input type="checkbox" id="camOn"> كاميرا</label>
+<label class="pill"><input type="checkbox" id="soundOn" checked> صوت</label>
+</div>
+<video id="camPreview" autoplay muted playsinline></video>
+</div>
+
+<div class="glass">
+<div class="modes">
+<div class="mode active" id="cardAI" onclick="selectMode('ai')"><b>ضد الكمبيوتر</b><span>تدريب</span></div>
+<div class="mode" id="cardFriend" onclick="selectMode('friend')"><b>ضد صاحبك</b><span>كود غرفة</span></div>
+<div class="mode" id="cardGlobal" onclick="selectMode('global')"><b>عالمي</b><span>عشوائي</span></div>
+</div>
+<div id="friendBox" style="display:none;margin-top:10px">
+<div class="row">
+<button class="btn-red" onclick="createRoom()">اعمل غرفة</button>
+<input id="joinCode" placeholder="كود">
+<button class="btn-black" onclick="joinRoom()">دخول</button>
+</div>
+<div class="row" style="margin-top:8px;justify-content:center">
+<button class="btn-white" onclick="copyLink()">نسخ اللينك</button>
+<span id="roomLabel" style="font-weight:800"></span>
+</div>
+</div>
+<div id="globalBox" style="display:none;margin-top:10px;text-align:center">
+<button class="btn-red" onclick="startGlobal()">دور على لاعب</button>
+</div>
+<button class="btn-black" id="startBtn" onclick="startMatch()" style="width:100%;font-size:16px;margin-top:12px">ابدأ • 120 ثانية • من 4</button>
+<div id="status" style="margin-top:8px">جاهز</div>
+<div id="msg"></div>
+</div>
+
+<div class="glass">
+<div class="score">
+<div><small id="label1">انت</small><br><b id="s1">0</b></div>
+<div class="time"><small>الوقت</small><br><b id="timer" style="font-size:24px">120</b><br><small id="roundLabel">عادية</small></div>
+<div><small id="label2">الكمبيوتر</small><br><b id="s2">0</b></div>
+</div>
+<div class="field" id="field">
+<div class="fieldCircle"></div>
+<div class="goal l"></div><div class="goal r"></div>
+<div id="target">ثبت<br>هنا</div>
+<div id="ball"></div>
+<div id="pointerDot"></div>
+</div>
+<div class="bars">
+<div class="barBox"><b id="calm1Name">انت</b> <span id="c1t" style="float:left">50%</span><div class="bar"><div id="c1" class="fill"></div></div><div class="wave"><canvas id="wave1" width="300" height="26"></canvas></div><div class="small" id="detail1">—</div></div>
+<div class="barBox"><b id="calm2Name">الخصم</b> <span id="c2t" style="float:left">50%</span><div class="bar"><div id="c2" class="fill red"></div></div><div class="wave"><canvas id="wave2" width="300" height="26"></canvas></div><div class="small" id="detail2">—</div></div>
+</div>
+</div>
+
+<div class="glass">
+<div class="breathWrap">
+<div id="breath">شهيق</div>
+<div class="micBox"><span class="small" id="micStatus">المايك مقفول</span><div class="micBar"><div id="micFill"></div></div></div>
+</div>
+<button class="holdBtn" id="holdBtn">ثبت وانت بتاخد شهيق • سيب وانت بتطلع زفير</button>
+</div>
+</div>
+
+<div class="modal" id="goldenModal">
+<div class="modalCard">
+<h2 style="margin:0">جولة فاصلة؟</h2>
+<p><span id="goldenScore"></span><br>60 ثانية • من 2<br><span class="small">لازم الاتنين يوافقوا</span></p>
+<div class="row" style="justify-content:center">
+<button class="btn-red" onclick="decideGolden(true)">موافق</button>
+<button class="btn-white" onclick="decideGolden(false)">رفض</button>
+</div>
+<div id="goldenWait" class="small" style="margin-top:10px"></div>
+</div>
+</div>
+
+<div class="modal" id="endModal">
+<div class="modalCard">
+<h2 id="endTitle" style="margin:0">انتهى</h2>
+<p id="endText"></p>
+<button class="btn-black" onclick="closeEnd()">العب تاني</button>
+</div>
+</div>
+
+<script>
+let mode='ai', nick='لاعب', playing=false, s1=0, s2=0, ballX=50, ballV=0, calm1=50, calm2=50, timeLeft=120, targetScore=4, isGolden=false, timerInt=null;
+let targetX=50, targetY=50, pointerX=50, pointerY=50, pointerSpeed=0;
+let breathPhase='inhale', breathStart=Date.now(), holding=false, micLevel=0, micReady=false, gyroMag=0, gyroReady=false, camMotion=0, camReady=false;
+let peer=null, conn=null, isHost=false, roomCode='', myDecision=null, oppDecision=null;
+let audioCtx=null, analyser=null;
+function saveNick(){ nick=document.getElementById('nick').value.trim()||'لاعب'; document.getElementById('calm1Name').textContent=nick; document.getElementById('label1').textContent=nick; }
+function selectMode(m){
+  mode=m;
+  document.querySelectorAll('.mode').forEach(e=>e.classList.remove('active'));
+  document.getElementById('cardAI').classList.toggle('active',m==='ai');
+  document.getElementById('cardFriend').classList.toggle('active',m==='friend');
+  document.getElementById('cardGlobal').classList.toggle('active',m==='global');
+  document.getElementById('friendBox').style.display=m==='friend'?'block':'none';
+  document.getElementById('globalBox').style.display=m==='global'?'block':'none';
+  document.getElementById('label2').textContent=m==='ai'?'الكمبيوتر':m==='friend'?'صاحبك':'عشوائي';
+  document.getElementById('calm2Name').textContent=m==='ai'?'الخصم':'الخصم';
+  setStatus(m==='ai'?'جاهز':m==='friend'?'اعمل غرفة او ادخل كود':'دور على لاعب');
+}
+function setStatus(t){ document.getElementById('status').textContent=t; }
+function genCode(){ const c='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; }
+function initPeer(id, onOpen){
+  if(peer){ try{peer.destroy();}catch(e){} }
+  peer=new Peer(id);
+  peer.on('open', (pid)=>{ if(onOpen) onOpen(pid); });
+  peer.on('connection', (c)=>{ setupConn(c, true); });
+  peer.on('error', (err)=>{
+    if(err.type==='unavailable-id'){ joinAsGuest(roomCode); }
+    else setStatus('مشكلة اتصال');
+  });
+}
+function setupConn(c, host){
+  conn=c; isHost=host;
+  conn.on('open', ()=>{ setStatus(host?'صاحبك دخل':'اتصلت'); document.getElementById('msg').textContent=host?'انت المضيف':'انت الضيف'; if(!host) sendData({type:'nick', nick}); });
+  conn.on('data', (d)=>{
+    if(d.type==='calm') calm2=d.calm;
+    if(d.type==='nick'){ document.getElementById('label2').textContent=d.nick; }
+    if(d.type==='state'){ ballX=d.ballX; s1=d.s1; s2=d.s2; timeLeft=d.timeLeft; calm1=d.calmOpp; calm2=d.calmHost; updateScoreUI(); }
+    if(d.type==='start') startLocal(false);
+    if(d.type==='goldenAsk') showGoldenModal();
+    if(d.type==='goldenDecision'){ oppDecision=d.accept; checkGoldenDecisions(); }
+    if(d.type==='goldenStart') startGoldenLocal();
+    if(d.type==='end') showEnd(d.text, d.title);
+  });
+}
+function sendData(o){ if(conn && conn.open){ try{conn.send(o);}catch(e){} } }
+function createRoom(){
+  roomCode=genCode();
+  document.getElementById('roomLabel').textContent='كودك: '+roomCode;
+  setStatus('غرفة '+roomCode);
+  initPeer('mindball-'+roomCode, ()=>{ setStatus('مستني صاحبك'); });
+}
+function joinRoom(){
+  roomCode=document.getElementById('joinCode').value.trim().toUpperCase();
+  if(!roomCode) return;
+  joinAsGuest(roomCode);
+}
+function joinAsGuest(code){
+  roomCode=code;
+  initPeer(undefined, ()=>{
+    let c=peer.connect('mindball-'+code);
+    setupConn(c,false);
+    setStatus('بنتصل بغرفة '+code);
+  });
+}
+function copyLink(){
+  if(!roomCode) return;
+  let link=location.origin+location.pathname+'?room='+roomCode;
+  navigator.clipboard.writeText(link).then(()=>setStatus('اتنسخ اللينك'));
+}
+function startGlobal(){
+  let bucket=Math.floor(Date.now()/60000)%5;
+  roomCode='GLOBAL-'+bucket;
+  setStatus('بندور...');
+  initPeer('mindball-'+roomCode, ()=>{ setStatus('مستني لاعب'); });
+}
+(function(){
+  let p=new URLSearchParams(location.search);
+  let r=p.get('room');
+  if(r){ selectMode('friend'); document.getElementById('joinCode').value=r; setTimeout(()=>joinAsGuest(r),500); }
+})();
+async function initMic(){
+  if(!document.getElementById('micOn').checked) return;
+  try{
+    let s=await navigator.mediaDevices.getUserMedia({audio:true});
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    let src=audioCtx.createMediaStreamSource(s);
+    analyser=audioCtx.createAnalyser(); analyser.fftSize=512;
+    src.connect(analyser); micReady=true;
+    document.getElementById('micStatus').textContent='المايك شغال';
+  }catch(e){ micReady=false; document.getElementById('micStatus').textContent='المايك مقفول'; }
+}
+function initGyro(){
+  if(!document.getElementById('gyroOn').checked) return;
+  if(typeof DeviceMotionEvent!=='undefined' && typeof DeviceMotionEvent.requestPermission==='function'){
+    DeviceMotionEvent.requestPermission().then(res=>{ if(res==='granted'){ window.addEventListener('devicemotion', onMotion); gyroReady=true; } }).catch(()=>{});
+  } else if('ondevicemotion' in window){ window.addEventListener('devicemotion', onMotion); gyroReady=true; }
+}
+function onMotion(e){
+  let a=e.accelerationIncludingGravity; if(!a) return;
+  let mag=Math.sqrt((a.x||0)*(a.x||0)+(a.y||0)*(a.y||0)+(a.z||0)*(a.z||0));
+  gyroMag=Math.abs(mag-9.8);
+}
+async function initCam(){
+  if(!document.getElementById('camOn').checked) return;
+  try{
+    let v=document.getElementById('camPreview'); v.style.display='block';
+    let s=await navigator.mediaDevices.getUserMedia({video:{width:160,height:120}});
+    v.srcObject=s; camReady=true;
+    let canvas=document.createElement('canvas'); canvas.width=80; canvas.height=60; let ctx=canvas.getContext('2d'); let prev=null;
+    setInterval(()=>{
+      if(!camReady) return;
+      ctx.drawImage(v,0,0,80,60);
+      let d=ctx.getImageData(0,0,80,60).data;
+      if(prev){ let diff=0; for(let i=0;i<d.length;i+=16){ diff+=Math.abs(d[i]-prev[i]); } camMotion=diff/(80*60); }
+      prev=new Uint8ClampedArray(d);
+    },500);
+  }catch(e){ camReady=false; }
+}
+document.getElementById('micOn').addEventListener('change', ()=>{ if(document.getElementById('micOn').checked) initMic(); });
+document.getElementById('camOn').addEventListener('change', ()=>{ if(document.getElementById('camOn').checked) initCam(); else { document.getElementById('camPreview').style.display='none'; camReady=false; } });
+document.getElementById('gyroOn').addEventListener('change', ()=>{ if(document.getElementById('gyroOn').checked) initGyro(); });
+let field=document.getElementById('field');
+function updatePointer(e){
+  let r=field.getBoundingClientRect();
+  let x=(e.clientX-r.left)/r.width*100, y=(e.clientY-r.top)/r.height*100;
+  if(e.touches && e.touches[0]){ x=(e.touches[0].clientX-r.left)/r.width*100; y=(e.touches[0].clientY-r.top)/r.height*100; }
+  let dx=x-pointerX, dy=y-pointerY;
+  pointerSpeed=Math.sqrt(dx*dx+dy*dy);
+  pointerX=Math.max(2,Math.min(98,x)); pointerY=Math.max(5,Math.min(95,y));
+  document.getElementById('pointerDot').style.left=pointerX+'%';
+  document.getElementById('pointerDot').style.top=pointerY+'%';
+}
+field.addEventListener('mousemove', updatePointer);
+field.addEventListener('touchmove', (e)=>{ e.preventDefault(); updatePointer(e); }, {passive:false});
+field.addEventListener('touchstart', (e)=>{ updatePointer(e); }, {passive:true});
+let holdBtn=document.getElementById('holdBtn');
+holdBtn.addEventListener('mousedown', ()=>holding=true);
+holdBtn.addEventListener('mouseup', ()=>holding=false);
+holdBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); holding=true; });
+holdBtn.addEventListener('touchend', ()=>holding=false);
+document.addEventListener('keydown', (e)=>{ if(e.code==='Space'){ e.preventDefault(); holding=true; }});
+document.addEventListener('keyup', (e)=>{ if(e.code==='Space') holding=false; });
+function startMatch(){
+  initMic(); initGyro();
+  if(mode==='ai'){ startLocal(true); }
+  else {
+    if(!conn || !conn.open){ setStatus('اعمل غرفة الاول'); return; }
+    if(!isHost){ setStatus('استنى المضيف'); return; }
+    sendData({type:'start'}); startLocal(true);
+  }
+}
+function startLocal(){
+  s1=0; s2=0; ballX=50; ballV=0; calm1=50; calm2=50; timeLeft=120; targetScore=4; isGolden=false;
+  document.getElementById('roundLabel').textContent='عادية';
+  playing=true; document.getElementById('msg').textContent='';
+  clearInterval(timerInt);
+  timerInt=setInterval(()=>{
+    timeLeft--; document.getElementById('timer').textContent=timeLeft;
+    if(s1>=targetScore || s2>=targetScore){ endMatch(); return; }
+    if(timeLeft<=0) onTimeEnd();
+  },1000);
+}
+function onTimeEnd(){
+  clearInterval(timerInt); playing=false;
+  if(s1===s2){
+    document.getElementById('goldenScore').textContent=s1+' - '+s2;
+    if(mode==='ai'){ document.getElementById('goldenModal').classList.add('show'); }
+    else { sendData({type:'goldenAsk'}); showGoldenModal(); }
+  } else endMatch();
+}
+function showGoldenModal(){
+  document.getElementById('goldenScore').textContent=s1+' - '+s2;
+  document.getElementById('goldenModal').classList.add('show');
+  document.getElementById('goldenWait').textContent='مستني الخصم...';
+  myDecision=null; oppDecision=null;
+}
+function decideGolden(accept){
+  myDecision=accept;
+  document.getElementById('goldenWait').textContent=accept?'وافقت - مستني الخصم':'رفضت';
+  if(mode==='ai'){
+    setTimeout(()=>{
+      if(accept){ document.getElementById('goldenModal').classList.remove('show'); startGoldenLocal(); }
+      else { document.getElementById('goldenModal').classList.remove('show'); endMatch(true); }
+    },500);
+  } else { sendData({type:'goldenDecision', accept}); checkGoldenDecisions(); }
+}
+function checkGoldenDecisions(){
+  if(myDecision===null || oppDecision===null) return;
+  if(myDecision && oppDecision){
+    document.getElementById('goldenModal').classList.remove('show');
+    if(isHost) sendData({type:'goldenStart'});
+    startGoldenLocal();
+  } else {
+    document.getElementById('goldenModal').classList.remove('show');
+    endMatch(true);
+  }
+}
+function startGoldenLocal(){
+  s1=0; s2=0; ballX=50; timeLeft=60; targetScore=2; isGolden=true;
+  document.getElementById('roundLabel').textContent='فاصلة';
+  document.getElementById('s1').textContent='0'; document.getElementById('s2').textContent='0';
+  document.getElementById('timer').textContent='60';
+  playing=true;
+  clearInterval(timerInt);
+  timerInt=setInterval(()=>{
+    timeLeft--; document.getElementById('timer').textContent=timeLeft;
+    if(s1>=2 || s2>=2){ endMatch(); return; }
+    if(timeLeft<=0) endMatch(true);
+  },1000);
+}
+function endMatch(isDraw){
+  playing=false; clearInterval(timerInt);
+  let title='', text='';
+  if(isDraw || s1===s2){ title='تعادل'; text=s1+' - '+s2; }
+  else if(s1>s2){ title='كسبت'; text=s1+' - '+s2; }
+  else { title='الخصم كسب'; text=s1+' - '+s2; }
+  document.getElementById('endTitle').textContent=title;
+  document.getElementById('endText').textContent=text;
+  document.getElementById('endModal').classList.add('show');
+  if(mode!=='ai' && isHost) sendData({type:'end', title, text});
+  if(navigator.vibrate) navigator.vibrate(120);
+}
+function closeEnd(){ document.getElementById('endModal').classList.remove('show'); }
+function showEnd(text,title){ document.getElementById('endTitle').textContent=title; document.getElementById('endText').textContent=text; document.getElementById('endModal').classList.add('show'); }
+function updateScoreUI(){ document.getElementById('s1').textContent=s1; document.getElementById('s2').textContent=s2; document.getElementById('timer').textContent=timeLeft; }
+function drawWave(canvasId, calm, color){
+  let c=document.getElementById(canvasId); if(!c) return;
+  let ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+  ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.beginPath();
+  for(let x=0;x<c.width;x++){
+    let amp=(100-calm)/100*10+1;
+    let y=13+Math.sin(x*0.15+Date.now()/250)*amp;
+    if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+setInterval(()=>{
+  let now=Date.now();
+  let cycle=(now-breathStart)%8000;
+  let newPhase=cycle<4000?'inhale':'exhale';
+  if(newPhase!==breathPhase) breathPhase=newPhase;
+  let breathEl=document.getElementById('breath');
+  if(breathPhase==='inhale'){ breathEl.textContent='شهيق'; breathEl.style.transform='scale(1.18)'; }
+  else { breathEl.textContent='زفير'; breathEl.style.transform='scale(0.86)'; }
+  let t=now/1000;
+  targetX=50+28*Math.sin(t*0.45); targetY=50+22*Math.cos(t*0.6);
+  let tgt=document.getElementById('target');
+  tgt.style.left=targetX+'%'; tgt.style.top=targetY+'%';
+  if(analyser){
+    let arr=new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(arr);
+    let sum=0; for(let v of arr) sum+=v;
+    micLevel=sum/arr.length;
+    document.getElementById('micFill').style.width=Math.min(100, micLevel)+'%';
+  }
+  if(!playing){
+    drawWave('wave1', calm1, '#1D1D1F'); drawWave('wave2', calm2, '#E4002B');
+    document.getElementById('c1').style.width=calm1+'%'; document.getElementById('c2').style.width=calm2+'%';
+    document.getElementById('c1t').textContent=Math.round(calm1)+'%'; document.getElementById('c2t').textContent=Math.round(calm2)+'%';
+    return;
+  }
+  let dx=pointerX-targetX, dy=pointerY-targetY;
+  let dist=Math.sqrt(dx*dx+dy*dy);
+  let steadyScore = dist<12 ? 2.0 : dist<22 ? 0.8 : dist<35 ? -0.8 : -2.0;
+  let speedPenalty = pointerSpeed>8 ? -2.2 : pointerSpeed>4 ? -0.8 : 0.3;
+  let breathScore=0;
+  if(document.getElementById('micOn').checked && micReady){
+    if(breathPhase==='inhale' && micLevel>18) breathScore=1.8;
+    else if(breathPhase==='inhale' && micLevel<=18) breathScore=-0.6;
+    else if(breathPhase==='exhale' && micLevel>8 && micLevel<28) breathScore=1.2;
+    else if(breathPhase==='exhale' && micLevel>=28) breathScore=-0.8;
+    else breathScore=0.2;
+  } else {
+    if(breathPhase==='inhale' && holding) breathScore=1.6;
+    else if(breathPhase==='exhale' && !holding) breathScore=1.1;
+    else if(breathPhase==='inhale' && !holding) breathScore=-0.6;
+    else breathScore=-0.8;
+  }
+  let gyroScore=0, gyroWeight=0.2;
+  if(document.getElementById('gyroOn').checked && gyroReady){ gyroScore = gyroMag>3 ? -2.0 : gyroMag>1.5 ? -0.8 : 0.8; }
+  else gyroWeight=0;
+  let camBonus=0;
+  if(document.getElementById('camOn').checked && camReady){ camBonus = camMotion<800 ? 0.6 : camMotion<2000 ? 0 : -1.2; }
+  let total = steadyScore*0.5 + breathScore*0.3 + gyroScore*gyroWeight + camBonus*0.1 + speedPenalty*0.15;
+  if(gyroWeight===0) total = steadyScore*0.6 + breathScore*0.4 + camBonus*0.1 + speedPenalty*0.15;
+  calm1 += total + (Math.random()-0.5)*0.3;
+  if(mode==='ai'){
+    let aiTarget = 55 - (calm1-50)*0.3 + Math.sin(now/5000)*12;
+    calm2 += (aiTarget-calm2)*0.08 + (Math.random()-0.5)*1.1;
+    if(Math.random()<0.01) calm2-=10;
+  } else {
+    if(!isHost) sendData({type:'calm', calm: calm1});
+  }
+  calm1=Math.max(5,Math.min(95,calm1)); calm2=Math.max(5,Math.min(95,calm2));
+  if(mode==='ai' || isHost){
+    let diff=calm1-calm2;
+    ballV += diff*0.008; ballV*=0.92; ballX += ballV;
+    if(ballX>=98){ s1++; document.getElementById('msg').textContent='جون'; ballX=50; ballV=0; calm1=50; calm2=50; if(navigator.vibrate) navigator.vibrate(80); if(s1>=targetScore) endMatch(); }
+    if(ballX<=2){ s2++; document.getElementById('msg').textContent='جون للخصم'; ballX=50; ballV=0; calm1=50; calm2=50; if(s2>=targetScore) endMatch(); }
+    if(mode!=='ai' && conn && conn.open) sendData({type:'state', ballX, s1, s2, timeLeft, calmOpp: calm2, calmHost: calm1});
+  }
+  document.getElementById('ball').style.left=ballX+'%';
+  document.getElementById('c1').style.width=calm1+'%'; document.getElementById('c2').style.width=calm2+'%';
+  document.getElementById('c1t').textContent=Math.round(calm1)+'%'; document.getElementById('c2t').textContent=Math.round(calm2)+'%';
+  document.getElementById('detail1').textContent=dist<15?'ثابت':'بره الدايرة';
+  document.getElementById('detail2').textContent=mode==='ai'?'—':'—';
+  drawWave('wave1', calm1, '#1D1D1F'); drawWave('wave2', calm2, '#E4002B');
+  updateScoreUI();
+  pointerSpeed*=0.85;
+},100);
+saveNick();
+selectMode('ai');
+</script>
+</body>
+</html>
